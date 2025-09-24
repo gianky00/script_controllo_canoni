@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione OdA{% endblock %}
+
+{% block content %}
+    <h1>Gestione OdA</h1>
+    <p>Aggiungi, modifica o elimina gli OdA (Ordine di Acquisto) da processare.</p>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Aggiungi Nuovo OdA</h5>
+                    <form action="{{ url_for('main.oda_management') }}" method="post">
+                        <div class="mb-3">
+                            <label for="numero_oda" class="form-label">Numero OdA</label>
+                            <input type="text" class="form-control" id="numero_oda" name="numero_oda" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="posizione_oda" class="form-label">Posizione OdA (Opzionale)</label>
+                            <input type="text" class="form-control" id="posizione_oda" name="posizione_oda">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Aggiungi OdA</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Elenco OdA Esistenti</h5>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Numero OdA</th>
+                                <th>Posizione OdA</th>
+                                <th>Azione</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for oda in odas %}
+                            <tr>
+                                <td>{{ oda.numero_oda }}</td>
+                                <td>{{ oda.posizione_oda }}</td>
+                                <td>
+                                    <form action="{{ url_for('main.delete_oda', oda_id=oda.id) }}" method="post" onsubmit="return confirm('Sei sicuro di voler eliminare questo OdA?');">
+                                        <button type="submit" class="btn btn-danger btn-sm">Elimina</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center">Nessun OdA configurato.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

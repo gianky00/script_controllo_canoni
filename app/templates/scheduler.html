@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Task Scheduler{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Task Scheduler</h1>
+        <a href="{{ url_for('main.new_task') }}" class="btn btn-success">Aggiungi Nuovo Task</a>
+    </div>
+    <p>Visualizza e gestisci le attività di automazione schedulate. Le modifiche vengono applicate automaticamente.</p>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Stato</th>
+                        <th scope="col">Nome Task / ID</th>
+                        <th scope="col">Schedulazione (Cron)</th>
+                        <th scope="col">Prossima Esecuzione</th>
+                        <th scope="col">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr>
+                        <td>
+                            {% if task.enabled %}
+                                <span class="badge bg-success">Attivo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pausa</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ task.name }}</strong><br>
+                            <small class="text-muted">{{ task.id }}</small>
+                        </td>
+                        <td>
+                            <pre class="mb-0"><code>{{ task.schedule_data | tojson(indent=2) }}</code></pre>
+                        </td>
+                        <td>{{ task.next_run_time }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <form action="{{ url_for('main.run_task_now', task_id=task.id) }}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-primary" title="Esegui Ora">Esegui</button>
+                                </form>
+                                <a href="{{ url_for('main.edit_task', task_id=task.id) }}" class="btn btn-sm btn-warning" title="Modifica">Modifica</a>
+                                <form action="{{ url_for('main.delete_task', task_id=task.id) }}" method="post" class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questo task?');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Elimina">Elimina</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">Nessun task trovato.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

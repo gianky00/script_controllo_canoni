@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <div class="mb-3">
+                    <label for="id" class="form-label">Task ID</label>
+                    <input type="text" class="form-control" id="id" name="id" value="{{ task.id if task else '' }}" {% if task %}readonly{% endif %}>
+                    <div class="form-text">L'ID univoco per il task. Non può essere modificato dopo la creazione.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nome Task</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ task.name if task else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="script_path" class="form-label">Script di Riferimento</label>
+                    <select class="form-select" id="script_path" name="script_path" required>
+                        <option value="scaricaTimbratureIsab.py" {% if task and task.script_path == 'scaricaTimbratureIsab.py' %}selected{% endif %}>scaricaTimbratureIsab.py</option>
+                        <option value="scaricaTScanoni.py" {% if task and task.script_path == 'scaricaTScanoni.py' %}selected{% endif %}>scaricaTScanoni.py</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="schedule_data" class="form-label">Schedulazione (JSON/CRON format)</label>
+                    <textarea class="form-control" id="schedule_data" name="schedule_data" rows="3" required>{{ task.schedule_data if task else '{"day_of_week": "*", "hour": "3", "minute": "0"}' }}</textarea>
+                    <div class="form-text">Esempio: <code>{"day_of_week": "mon-fri", "hour": "9"}</code></div>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="enabled" name="enabled" value="true" {% if task and task.enabled %}checked{% endif %}>
+                    <label class="form-check-label" for="enabled">
+                        Abilitato
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Salva Task</button>
+                <a href="{{ url_for('main.scheduler_page') }}" class="btn btn-secondary">Annulla</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}
