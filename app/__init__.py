@@ -13,7 +13,7 @@ scheduler = BackgroundScheduler(daemon=True)
 def create_app():
     """Creates and configures the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
-
+    
     # Create the instance folder if it doesn't exist
     try:
         os.makedirs(app.instance_path, exist_ok=True)
@@ -23,14 +23,14 @@ def create_app():
     # Configuration
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('SECRET_KEY', 'a_very_secret_key_for_dev'),
-        SQLALCHEMY_DATABASE_URI='sqlite:////app/instance/scheduler.db',
+        SQLALCHEMY_DATABASE_URI='sqlite:///' + os.path.join(app.instance_path, 'scheduler.db'),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
 
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
-
+    
     # Start the scheduler
     if not scheduler.running:
         scheduler.start()
@@ -42,7 +42,7 @@ def create_app():
     # Register CLI commands
     from commands import register_commands
     register_commands(app)
-
+        
     # Configure logging
     if not app.debug and not app.testing:
         if not os.path.exists('logs'):

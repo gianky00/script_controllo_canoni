@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Change to the script's directory to ensure paths are correct
+cd "$(dirname "$0")"
+
 # Set Flask environment variables
 export FLASK_APP="app:create_app"
 export FLASK_RUN_HOST=0.0.0.0
