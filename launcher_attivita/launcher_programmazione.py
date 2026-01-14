@@ -448,9 +448,9 @@ class ScriptRunnerApp:
 
     def _create_launcher_tab(self, parent_tab):
         button_frame = tk.Frame(parent_tab, bg=self.COLOR_FRAME); button_frame.pack(fill=tk.X, pady=(10, 25))
-        self.btn_corrente = ModernButton(button_frame, "Prog. Corrente", "⏵", lambda: self.launch_script("rileva_programmazione_attuale.py"), self.COLOR_SUCCESS, self.COLOR_SUCCESS_HOVER, self.COLOR_SUCCESS_PRESS)
-        self.btn_prossima = ModernButton(button_frame, "Prog. Prossima", "⏵", lambda: self.launch_script("rileva_programmazione_prossima.py"), self.COLOR_ACCENT, self.COLOR_ACCENT_HOVER, self.COLOR_ACCENT_PRESS)
-        self.btn_flag_a3 = ModernButton(button_frame, "FLAG TCL A3", "⏵", lambda: self.launch_script("SafeWorkFlagA3.py"), self.COLOR_ACCENT, self.COLOR_ACCENT_HOVER, self.COLOR_ACCENT_PRESS)
+        self.btn_corrente = ModernButton(button_frame, "Scarica Canoni", "⏵", lambda: self.launch_script("../controllo_canoni_ts/settings_gui.py"), self.COLOR_SUCCESS, self.COLOR_SUCCESS_HOVER, self.COLOR_SUCCESS_PRESS)
+        self.btn_prossima = ModernButton(button_frame, "Scarica Timbrature", "⏵", lambda: self.launch_script("../timbrature_isab/scaricaTimbratureIsab.py"), self.COLOR_ACCENT, self.COLOR_ACCENT_HOVER, self.COLOR_ACCENT_PRESS)
+        self.btn_flag_a3 = ModernButton(button_frame, "Interfaccia Timbrature", "⏵", lambda: self.launch_script("../timbrature_isab/interfaccia_grafica_database_timbrature_isab.py"), self.COLOR_ACCENT, self.COLOR_ACCENT_HOVER, self.COLOR_ACCENT_PRESS)
         self.btn_arresto = ModernButton(button_frame, "Arresto", "⏹", self.arresta_script, self.COLOR_WARNING, self.COLOR_WARNING_HOVER, self.COLOR_WARNING_PRESS)
         self.btn_chiudi = ModernButton(button_frame, "Chiudi", "✕", self._safe_close, self.COLOR_SYSTEM, self.COLOR_SYSTEM_HOVER, self.COLOR_SYSTEM_PRESS)
         self.launch_buttons = [self.btn_corrente, self.btn_prossima, self.btn_flag_a3]

@@ -18,16 +18,11 @@ venv.bak/
 scheduler.db
 
 # Instance Folder
-/instance
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+instance/
 
 # Logs
 logs/
+logs_archive/
 *.log
 
 # Other

@@ -1,0 +1,7 @@
+nel file Excel paramtriScaricoTS ho:
+E2	DOWNLOAD TS	C:\Users\Coemi\Downloads
+E3	SPOSTAMENTO FILE TS	\\192.168.11.251\Condivisa\ALLEGRETTI\2025\TS\CANONI\12 - DICEMBRE
+E4	COMPARATORE TS	\\192.168.11.251\Database_Tecnico_SMI\MASTER FOGLI DI CALCOLO\Comparatore_TS-Giornaliera (canoni).xlsm
+E5	GIORNALIERA	\\192.168.11.251\Database_Tecnico_SMI\Giornaliere\Giornaliere 2025\Giornaliera 12-2025.xlsm
+E3 ABBIAMO LA FORMULA: ="\\192.168.11.251\Condivisa\ALLEGRETTI\" & SE(GIORNO(OGGI())<79;ANNO(DATA.MESE(OGGI();-1)) & "\TS\CANONI\" & TESTO(DATA.MESE(OGGI();-1);"mm - ") & MAIUSC(TESTO(DATA.MESE(OGGI();-1);"mmmm"));ANNO(OGGI()) & "\TS\CANONI\" & TESTO(OGGI();"mm - ") & MAIUSC(TESTO(OGGI();"mmmm")))
+in E5 abbiamo la formula:="\\192.168.11.251\Database_Tecnico_SMI\Giornaliere\Giornaliere " & STRINGA.ESTRAI(parametri!E3;TROVA("\TS\CANONI\";parametri!E3)-4;4) & "\" & "Giornaliera " & DESTRA(STRINGA.ESTRAI(parametri!E3;1;TROVA(" - ";parametri!E3)-1);2) & "-" & STRINGA.ESTRAI(parametri!E3;TROVA("\TS\CANONI\";parametri!E3)-4;4) & ".xlsm"
