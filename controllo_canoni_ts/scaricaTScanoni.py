@@ -70,10 +70,31 @@ logger.info("--- AVVIO ROBOT SELENIUM ---")
 driver = None
 try:
     chrome_options = webdriver.ChromeOptions()
-    prefs = {"download.default_directory": DOWNLOAD_DIR, "download.prompt_for_download": False}
+    prefs = {
+        "download.default_directory": str(Path(DOWNLOAD_DIR).absolute()),
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,
+        "safebrowsing.enabled": True, 
+        "safebrowsing.disable_download_protection": True,
+        "profile.default_content_settings.popups": 0,
+        "profile.content_settings.exceptions.automatic_downloads.*.setting": 1
+    }
     chrome_options.add_experimental_option("prefs", prefs)
+    
+    # Argomenti per disabilitare le nuove feature di sicurezza di Chrome (Bubble, Warnings)
+    chrome_options.add_argument("--disable-features=InsecureDownloadWarnings")
+    chrome_options.add_argument("--disable-features=DownloadBubble,DownloadBubbleV2")
+    
+    # Altri argomenti permissivi
     chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument("--log-level=3") # Meno rumore nei log
+    chrome_options.add_argument("--log-level=3")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--allow-running-insecure-content")
+    chrome_options.add_argument("--disable-web-security")
+    chrome_options.add_argument(f"--unsafely-treat-insecure-origin-as-secure={LOGIN_URL}")
 
     driver = webdriver.Chrome(options=chrome_options)
     wait = WebDriverWait(driver, 20)
@@ -84,9 +105,20 @@ try:
     logger.info("Login in corso...")
     wait.until(EC.presence_of_element_located((By.NAME, "Username"))).send_keys(USERNAME)
     wait.until(EC.presence_of_element_located((By.NAME, "Password"))).send_keys(PASSWORD)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Accedi']"))).click()
+    wait.until(EC.element_to_be_clickable((By.ID, "round_button-1017-btnInnerEl"))).click()
     
     attendi_scomparsa_overlay(driver, 60)
+
+    # Gestione Popup "Sessione attiva"
+    try:
+        wait_popup = WebDriverWait(driver, 5)
+        if len(driver.find_elements(By.ID, "messagebox-1001-msg")) > 0 and driver.find_element(By.ID, "messagebox-1001-msg").is_displayed():
+             logger.info("Rilevata sessione attiva. Clicco su 'Si'...")
+             wait_popup.until(EC.element_to_be_clickable((By.ID, "button-1006-btnInnerEl"))).click()
+             attendi_scomparsa_overlay(driver, 60)
+    except Exception as e:
+        # Ignora errori se il popup non c'è, è opzionale
+        pass
 
     try:
         wait_ok = WebDriverWait(driver, 5)
@@ -104,10 +136,39 @@ try:
     attendi_scomparsa_overlay(driver)
 
     logger.info(f"Selezione Fornitore: {PROVIDER}")
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'x-form-arrow-trigger')]"))).click()
-    opt = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, f"//li[normalize-space(text())='{PROVIDER}']")))
-    driver.execute_script("arguments[0].scrollIntoView(); arguments[0].click();", opt)
+    # Utilizzo un XPath più specifico per il trigger del fornitore, simile a scaricaTimbratureIsab
+    fornitore_trigger_xpath = "//input[@name='CodiceFornitore']/ancestor::div[contains(@class, 'x-form-trigger-wrap')]//div[contains(@class, 'x-form-arrow-trigger')]"
+    
+    try:
+        # Attendo che il trigger sia visibile e cliccabile
+        trigger = wait.until(EC.element_to_be_clickable((By.XPATH, fornitore_trigger_xpath)))
+        ActionChains(driver).move_to_element(trigger).click().perform()
+        logger.info(" -> Trigger fornitore cliccato.")
+    except Exception:
+        logger.warning(" -> Trigger specifico non trovato, provo quello generico...")
+        wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'x-form-arrow-trigger')]"))).click()
+
     attendi_scomparsa_overlay(driver)
+    
+    # Selezione dell'opzione dalla lista
+    opt_xpath = f"//li[normalize-space(text())='{PROVIDER}']"
+    opt = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, opt_xpath)))
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", opt)
+    
+    logger.info(f" -> Fornitore '{PROVIDER}' selezionato.")
+    attendi_scomparsa_overlay(driver)
+
+    # Verifica se il campo è stato effettivamente popolato (opzionale ma utile)
+    try:
+        valore_input = driver.find_element(By.NAME, "CodiceFornitore").get_attribute("value")
+        if not valore_input:
+            logger.warning(" -> ATTENZIONE: Il campo Fornitore risulta ancora vuoto! Provo inserimento manuale...")
+            campo_f = driver.find_element(By.NAME, "CodiceFornitore")
+            campo_f.send_keys(PROVIDER)
+            time.sleep(1)
+            driver.execute_script("arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", campo_f)
+    except:
+        pass
 
     logger.info(f"Impostazione Data: {DATE_TO_INSERT}")
     campo_d = wait.until(EC.visibility_of_element_located((By.NAME, "DataTimesheetDa")))
@@ -115,6 +176,8 @@ try:
     campo_d.send_keys(DATE_TO_INSERT)
 
     js_ev = "var e=new Event('change',{bubbles:true}); arguments[0].dispatchEvent(e);"
+
+    all_downloads_ok = True
 
     # Loop
     for o in ORDERS:
@@ -137,8 +200,11 @@ try:
         p_dl = Path(DOWNLOAD_DIR)
         start_files = set(p_dl.iterdir())
         
-        btn_dl = "//div[contains(@class, 'x-tool')]//div[contains(@style, 'FontAwesome')]"
-        wait.until(EC.element_to_be_clickable((By.XPATH, btn_dl))).click()
+        btn_dl_xpath = "//div[contains(@class, 'x-tool')]//div[contains(@style, 'FontAwesome')]"
+        btn_dl_elem = wait.until(EC.element_to_be_clickable((By.XPATH, btn_dl_xpath)))
+        
+        # Uso JS click per evitare ElementClickInterceptedException se ci sono overlay/pulsanti sopra
+        driver.execute_script("arguments[0].click();", btn_dl_elem)
         
         found = None
         for _ in range(60):
@@ -151,41 +217,53 @@ try:
             time.sleep(0.5)
 
         if found:
-            sfx = f"-{p}" if p else ""
-            name = f"{n}{sfx}.xlsx"
+            # Rinomina solo con ODC (numero OdA) come richiesto
+            name = f"{n}.xlsx"
             dest = Path(MOVE_DIR)
             dest.mkdir(parents=True, exist_ok=True)
             
             f_path = dest / name
-            if f_path.exists():
-                f_path = dest / f"{n}{sfx}_{int(time.time())}.xlsx"
             
-            shutil.move(str(found), str(f_path))
-            logger.info(f" -> File salvato: {f_path.name}")
+            # Logica robusta di spostamento con retry e sovrascrittura
+            moved_ok = False
+            for attempt in range(5):
+                try:
+                    # Attesa iniziale/tra i tentativi per permettere il rilascio del file da parte di Chrome/Antivirus
+                    time.sleep(2) 
+                    
+                    # Se il file esiste già, provo a rimuoverlo per permettere la sovrascrittura
+                    if f_path.exists():
+                        try:
+                            os.remove(f_path)
+                            logger.info(f" -> File esistente rimosso per sovrascrittura: {name}")
+                        except:
+                            # Se fallisce la rimozione (es file aperto), shutil.move proverà comunque a sovrascrivere
+                            pass
+
+                    shutil.move(str(found), str(f_path))
+                    logger.info(f" -> File salvato: {f_path.name}")
+                    moved_ok = True
+                    break
+                except (PermissionError, OSError) as e:
+                    logger.warning(f" -> File bloccato o errore spostamento ({e}). Riprovo ({attempt+1}/5)...")
+            
+            if not moved_ok:
+                logger.error(f" -> ERRORE: Impossibile spostare il file {found.name} dopo 5 tentativi.")
+                all_downloads_ok = False
+                break
         else:
-            logger.warning(f" -> Download non riuscito per OdA {n}")
+            logger.error(f" -> ERRORE: Download non riuscito per OdA {n}. Interrompo l'elaborazione.")
+            all_downloads_ok = False
+            break
 
     logger.info("--- OPERAZIONI WEB COMPLETATE ---")
 
 except Exception:
     logger.error("ERRORE DURANTE L'ESECUZIONE:")
     logger.error(traceback.format_exc())
+    all_downloads_ok = False
 finally:
     if driver:
         driver.quit()
-
-# --- MACRO ---
-if RUN_MACRO and PYWIN32_AVAILABLE and MACRO_PATH:
-    try:
-        logger.info(f"Avvio Macro Excel: {Path(MACRO_PATH).name}")
-        excel = win32com.client.Dispatch("Excel.Application")
-        excel.Visible = True # Visibile per monitorare l'avanzamento
-        wb = excel.Workbooks.Open(str(Path(MACRO_PATH).resolve()))
-        excel.Run("elaboraTutto")
-        wb.Close(SaveChanges=True)
-        excel.Quit()
-        logger.info("Macro completata con successo.")
-    except Exception:
-        logger.error(f"Errore Macro: {traceback.format_exc()}")
 
 logger.info("Fine Script.")
