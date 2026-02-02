@@ -1,0 +1,41 @@
+{
+    "account": "TRICHINI",
+    "login_url": "https://portalefornitori.isab.com/Ui/",
+    "username": "9psaraceno",
+    "password": "Mascara@13",
+    "download_dir": "C:/Users/Coemi/Downloads",
+    "move_dir": "\\\\192.168.11.251\\Condivisa\\ALLEGRETTI\\2026\\TS\\CANONI\\01 - GENNAIO",
+    "giornaliera_path": "\\\\192.168.11.251\\Database_Tecnico_SMI\\Giornaliere\\Giornaliere 2026\\Giornaliera 01-2026.xlsm",
+    "macro_file_path": "//192.168.11.251/Database_Tecnico_SMI/MASTER FOGLI DI CALCOLO/Comparatore_TS-Giornaliera (canoni).xlsm",
+    "run_macro": true,
+    "provider": "KK10608 - COEMI S.R.L.",
+    "date_to_insert": "01.01.2026",
+    "orders": [
+        {
+            "numero": "5400269972",
+            "posizione": "10",
+            "nome": "CANONE MESSINA"
+        },
+        {
+            "numero": "5400270025",
+            "posizione": "10",
+            "nome": "CANONE NASELLI"
+        },
+        {
+            "numero": "5400269953",
+            "posizione": "10",
+            "nome": "CANONE CALDARELLA"
+        },
+        {
+            "numero": "5400270096",
+            "posizione": "10",
+            "nome": "CANONE CALDARELLA2"
+        }
+    ],
+    "manual_consuntivi": {
+        "MESSINA": "008",
+        "NASELLI": "007",
+        "CALDARELLA": "006",
+        "CALDARELLA 2": "011"
+    }
+}

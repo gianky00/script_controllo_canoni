@@ -108,9 +108,30 @@ try:
     logger.info(f"Data calcolata per la ricerca (ieri): {data_da_usare}")
 
     chrome_options = webdriver.ChromeOptions()
-    prefs = {"download.default_directory": DOWNLOAD_DIR, "download.prompt_for_download": False}
+    prefs = {
+        "download.default_directory": str(Path(DOWNLOAD_DIR).absolute()),
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,
+        "safebrowsing.enabled": True, 
+        "safebrowsing.disable_download_protection": True,
+        "profile.default_content_settings.popups": 0,
+        "profile.content_settings.exceptions.automatic_downloads.*.setting": 1
+    }
     chrome_options.add_experimental_option("prefs", prefs)
+
+    # Argomenti per disabilitare le nuove feature di sicurezza di Chrome (Bubble, Warnings)
+    chrome_options.add_argument("--disable-features=InsecureDownloadWarnings")
+    chrome_options.add_argument("--disable-features=DownloadBubble,DownloadBubbleV2")
+
+    # Altri argomenti permissivi
     chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--allow-running-insecure-content")
+    chrome_options.add_argument("--disable-web-security")
+    chrome_options.add_argument(f"--unsafely-treat-insecure-origin-as-secure={LOGIN_URL}")
 
     logger.info("Inizializzazione WebDriver Chrome...")
     driver = webdriver.Chrome(options=chrome_options)
@@ -181,6 +202,18 @@ try:
     logger.info(f"  Fornitore '{FORNITORE_DA_SELEZIONARE}' selezionato.")
     attendi_scomparsa_overlay(driver) # <-- MODIFICA: attende l'aggiornamento post-selezione
 
+    # Verifica se il campo è stato effettivamente popolato
+    try:
+        valore_input = driver.find_element(By.NAME, "CodiceFornitore").get_attribute("value")
+        if not valore_input:
+            logger.warning("  ATTENZIONE: Il campo Fornitore risulta vuoto! Provo inserimento manuale...")
+            campo_f = driver.find_element(By.NAME, "CodiceFornitore")
+            campo_f.send_keys(FORNITORE_DA_SELEZIONARE)
+            time.sleep(1)
+            driver.execute_script("arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", campo_f)
+    except Exception as e_verify:
+        logger.debug(f"  Errore durante la verifica del campo fornitore: {e_verify}")
+
     logger.info(f"  Inserimento data Da/A: '{data_da_usare}'...")
     wait.until(EC.visibility_of_element_located((By.NAME, "DataTsDa"))).clear()
     driver.find_element(By.NAME, "DataTsDa").send_keys(data_da_usare)
@@ -199,8 +232,11 @@ try:
     files_before_download = set(path_to_downloads_obj.iterdir())
     
     excel_button_xpath = "//div[contains(@class, 'x-tool') and @role='button' and .//div[contains(@style, 'FontAwesome')]]"
-    wait.until(EC.element_to_be_clickable((By.XPATH, excel_button_xpath))).click()
-    logger.info("  Icona Excel per download cliccata. Attendo il completamento (max 45s)...")
+    excel_button = wait.until(EC.element_to_be_clickable((By.XPATH, excel_button_xpath)))
+    
+    logger.info("  Icona Excel per download trovata. Clicco via JS...")
+    driver.execute_script("arguments[0].click();", excel_button)
+    logger.info("  Click eseguito. Attendo il completamento (max 45s)...")
     
     download_start_time = time.time()
     while time.time() - download_start_time < 45:
@@ -316,11 +352,20 @@ if final_downloaded_path and final_downloaded_path.exists():
         wb_source.close()
         wb_dest.close()
 
-        try:
-            os.remove(final_downloaded_path)
-            logger.info(f"  File temporaneo '{final_downloaded_path.name}' eliminato con successo.")
-        except OSError as e_remove:
-            logger.warning(f"  ATTENZIONE: Impossibile eliminare il file scaricato: {e_remove}")
+        # Retry logic per eliminazione file temporaneo
+        removed = False
+        for attempt in range(5):
+            try:
+                time.sleep(1) # Pausa preventiva
+                os.remove(final_downloaded_path)
+                logger.info(f"  File temporaneo '{final_downloaded_path.name}' eliminato con successo.")
+                removed = True
+                break
+            except OSError as e_remove:
+                logger.warning(f"  ATTENZIONE: File bloccato ({e_remove}). Riprovo eliminazione ({attempt+1}/5)...")
+        
+        if not removed:
+             logger.error(f"  ERRORE: Impossibile eliminare il file scaricato '{final_downloaded_path.name}' dopo vari tentativi.")
             
     except Exception as e_excel_processing:
         logger.critical(f"ERRORE CRITICO durante l'elaborazione dei file Excel: {e_excel_processing}\n{traceback.format_exc()}")

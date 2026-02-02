@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Databases
+*.sqlite
+*.sqlite3
+scheduler.db
+
+# Instance Folder
+instance/
+
+# Logs
+logs/
+logs_archive/
+*.log
+
+# Other
+.DS_Store
